@@ -2,7 +2,7 @@
 
 macOS Media Key Enabler for Music.app and Spotify.
 
-Fork of [milgra/highsierramediakeyenabler](https://github.com/milgra/highsierramediakeyenabler), modernized for current macOS (Tahoe / macOS 26).
+Fork of [milgra/macmediakeyforwarder](https://github.com/milgra/macmediakeyforwarder), modernized for current macOS (Tahoe / macOS 26).
 
 ---
 
