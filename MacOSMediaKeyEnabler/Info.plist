@@ -22,6 +22,8 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>MacOSMediaKeyEnabler steuert Music und Spotify über die Medientasten und benötigt dafür die Erlaubnis, diese Apps per Apple Events zu steuern.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>2017. Milan Toth. No rights reserved.</string>
 	<key>NSMainNibFile</key>

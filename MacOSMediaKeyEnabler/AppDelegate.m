@@ -3,6 +3,8 @@
 #import "Spotify.h"
 #import <ScriptingBridge/ScriptingBridge.h>
 #import <ServiceManagement/ServiceManagement.h>
+#import <CoreServices/CoreServices.h>
+#import <UserNotifications/UserNotifications.h>
 
 typedef NS_ENUM(NSInteger, MediaKeysPrioritize)
 {
@@ -108,6 +110,54 @@ static void startMusicLibraryPlayback(void)
     });
 }
 
+// Fragt TCC, ob wir die Ziel-App per Apple Events steuern dürfen.
+// askUserIfNeeded == NO -> schnell und NICHT blockierend, daher sicher im
+// Event-Tap-Callback verwendbar. status-Werte:
+//   noErr (0)                      -> erlaubt
+//   errAEEventNotPermitted (-1743) -> ausdrücklich verweigert
+//   errAEEventWouldRequireUserConsent (-1744) -> noch nicht entschieden
+//   procNotFound (-600)            -> Ziel-App läuft nicht
+static OSStatus automationStatus(NSString *bundleID, Boolean askUserIfNeeded)
+{
+    const char *bid = [bundleID UTF8String];
+    AEAddressDesc target;
+    OSStatus err = AECreateDesc(typeApplicationBundleID, bid, strlen(bid), &target);
+    if ( err != noErr ) return err;
+    OSStatus status = AEDeterminePermissionToAutomateTarget(&target, typeWildCard, typeWildCard, askUserIfNeeded);
+    AEDisposeDesc(&target);
+    return status;
+}
+
+// Backup-Kernfrage: Würden wir diesen Player steuern wollen, dürfen es aber
+// definitiv nicht? Dann darf die Taste nicht verschluckt werden.
+static BOOL automationDenied(NSString *bundleID)
+{
+    return automationStatus(bundleID, false) == errAEEventNotPermitted;
+}
+
+// Weist den Nutzer dezent darauf hin, dass die Steuerung wegen fehlender
+// Automation-Erlaubnis nicht möglich war. Gedrosselt auf höchstens einmal pro
+// 30 s, damit nicht jeder Tastendruck eine Meldung erzeugt. Läuft im
+// Event-Tap-Callback (Main-Thread), daher kein Lock nötig.
+static void notifyAutomationDenied(NSString *appName)
+{
+    static NSTimeInterval lastNotified = 0;
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    if ( now - lastNotified < 30.0 ) return;
+    lastNotified = now;
+
+    UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
+    content.title = NSLocalizedString(@"Mediensteuerung blockiert", @"Notification title when automation permission is missing");
+    content.body = [NSString stringWithFormat:
+                    NSLocalizedString(@"%@ konnte nicht gesteuert werden – die Automation-Erlaubnis fehlt. Systemeinstellungen → Datenschutz & Sicherheit → Automation.", @"Notification body when automation permission is missing"),
+                    appName];
+
+    UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"automation-denied"
+                                                                          content:content
+                                                                          trigger:nil];
+    [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:request withCompletionHandler:nil];
+}
+
 static CGEventRef tapEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
     @autoreleasepool
@@ -180,6 +230,34 @@ static CGEventRef tapEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
             // Explizite Priorität: nur die Play-Taste startet den gewählten
             // Player, alle anderen Tasten gehen ans System.
             if (keyCode != NX_KEYTYPE_PLAY) return event;
+        }
+
+        // --- Backup: verschluckte Tasten verhindern ---
+        // Wir kämen hierher nur, wenn wir laut Modus einen laufenden Player
+        // steuern wollen. Fehlt für jeden in Frage kommenden, laufenden Player
+        // die Automation-Erlaubnis, reichen wir die Taste ans System durch,
+        // statt sie wirkungslos zu schlucken. So bleibt die Mediensteuerung
+        // (macOS-Standard, Web-Player) funktionsfähig, selbst wenn die
+        // Berechtigung fehlt oder zurückgezogen wurde.
+        switch ( mediaKeysPriority )
+        {
+            case MediaKeysPrioritizeMusic:
+                if ( musicRunning && automationDenied(@"com.apple.Music") ) { notifyAutomationDenied(@"Music"); return event; }
+                break;
+            case MediaKeysPrioritizeSpotify:
+                if ( spotifyRunning && automationDenied(@"com.spotify.client") ) { notifyAutomationDenied(@"Spotify"); return event; }
+                break;
+            case MediaKeysPrioritizeNone:
+            {
+                BOOL musicDenied   = musicRunning   && automationDenied(@"com.apple.Music");
+                BOOL spotifyDenied = spotifyRunning && automationDenied(@"com.spotify.client");
+                if ( !(musicRunning && !musicDenied) && !(spotifyRunning && !spotifyDenied) )
+                {
+                    notifyAutomationDenied( musicDenied ? @"Music" : @"Spotify" );
+                    return event;
+                }
+                break;
+            }
         }
 
         int keyFlags = ([nsEvent data1] & 0x0000FFFF);
@@ -401,9 +479,12 @@ static CGEventRef tapEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
     [ menu addItemWithTitle : NSLocalizedString(@"Check for updates", @"Check for updates") action : @selector(update) keyEquivalent : @"" ];
     [ menu addItemWithTitle : NSLocalizedString(@"Quit", @"Quit") action : @selector(terminate) keyEquivalent : @"" ];
     
-    NSImage* image = [ NSImage imageNamed : @"icon" ];
+    // SF Symbol "pianokeys" — scharf, adaptiv (hell/dunkel) und ohne PNG-Assets.
+    NSImage* image = [ NSImage imageWithSystemSymbolName : @"pianokeys" accessibilityDescription : @"macOS Media Key Enabler" ];
+    NSImageSymbolConfiguration *symbolConfig = [ NSImageSymbolConfiguration configurationWithPointSize : 15 weight : NSFontWeightRegular ];
+    image = [ image imageWithSymbolConfiguration : symbolConfig ];
     [ image setTemplate : YES ];
-    
+
     statusItem = [ [ NSStatusBar systemStatusBar ] statusItemWithLength : NSVariableStatusItemLength ];
     statusItem.button.toolTip = @"macOS Media Key Enabler";
     statusItem.button.image = image;
@@ -415,6 +496,23 @@ static CGEventRef tapEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
     
     NSDictionary *trustOpts = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
     AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)trustOpts);
+
+    // Automation-Zustimmung früh und einmalig anstoßen (askUserIfNeeded == YES
+    // -> kann den Systemdialog zeigen). Bewusst auf einem Hintergrund-Thread,
+    // damit ein evtl. blockierender Dialog NICHT den Event-Tap-Callback oder
+    // den Main-Thread aufhält. Wirkt nur für bereits laufende Player; ist einer
+    // nicht offen, liefert TCC procNotFound und es passiert nichts.
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        automationStatus(@"com.apple.Music", true);
+        automationStatus(@"com.spotify.client", true);
+    });
+
+    // Erlaubnis für die Hinweis-Benachrichtigung anfordern (einmalig).
+    [[UNUserNotificationCenter currentNotificationCenter]
+        requestAuthorizationWithOptions:UNAuthorizationOptionAlert
+                      completionHandler:^(BOOL granted, NSError * _Nullable error) {
+        if ( error ) NSLog(@"Notification-Berechtigung: %@", error);
+    }];
 
     if ( ![self attemptCreateEventTap] ) {
         // Berechtigung fehlt (noch) — z.B. nach einem Rebuild, weil die

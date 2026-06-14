@@ -13,8 +13,6 @@
 		336F74551E07E136009BCC1B /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 336F74531E07E136009BCC1B /* MainMenu.xib */; };
 		336F74651E07E4F6009BCC1B /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 336F74641E07E4F6009BCC1B /* CoreAudio.framework */; };
 		33CD48BF1F866DB7000C454F /* ScriptingBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 33CD48BE1F866DB7000C454F /* ScriptingBridge.framework */; };
-		33CD48CB1F867394000C454F /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 33CD48C71F8671B6000C454F /* icon.png */; };
-		33CD48CC1F867408000C454F /* icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 33CD48C91F86724F000C454F /* icon@2x.png */; };
 		A5999C4C1FF3BB89009905E1 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5999C4E1FF3BB89009905E1 /* Localizable.strings */; };
 		AAAA000000000000000000A2 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAA000000000000000000A1 /* ServiceManagement.framework */; };
 /* End PBXBuildFile section */
@@ -37,8 +35,6 @@
 		33B952841FD6E8C5003EE4CD /* .travis.yml */ = {isa = PBXFileReference; lastKnownFileType = text; path = .travis.yml; sourceTree = SOURCE_ROOT; };
 		33CD48BE1F866DB7000C454F /* ScriptingBridge.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ScriptingBridge.framework; path = System/Library/Frameworks/ScriptingBridge.framework; sourceTree = SDKROOT; };
 		33CD48C11F866DC6000C454F /* Music.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Music.h; sourceTree = "<group>"; };
-		33CD48C71F8671B6000C454F /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
-		33CD48C91F86724F000C454F /* icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon@2x.png"; sourceTree = "<group>"; };
 		A5999C4D1FF3BB89009905E1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AAAA000000000000000000A1 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		A5999C4F1FF3BB98009905E1 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -93,8 +89,6 @@
 			isa = PBXGroup;
 			children = (
 				33B952841FD6E8C5003EE4CD /* .travis.yml */,
-				33CD48C71F8671B6000C454F /* icon.png */,
-				33CD48C91F86724F000C454F /* icon@2x.png */,
 				336F74511E07E136009BCC1B /* Assets.xcassets */,
 				336F74531E07E136009BCC1B /* MainMenu.xib */,
 				336F74561E07E136009BCC1B /* Info.plist */,
@@ -187,9 +181,7 @@
 			files = (
 				336F74521E07E136009BCC1B /* Assets.xcassets in Resources */,
 				A5999C4C1FF3BB89009905E1 /* Localizable.strings in Resources */,
-				33CD48CC1F867408000C454F /* icon@2x.png in Resources */,
 				336F74551E07E136009BCC1B /* MainMenu.xib in Resources */,
-				33CD48CB1F867394000C454F /* icon.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
