@@ -11,9 +11,37 @@ The app runs in the menu bar in the form of a subtle and beautiful black dot.
 
 If you want even more control over what you want to control you should try [beardedspice](http://beardedspice.github.io)
 
-Requirements: macOS 13 or newer. The app needs Accessibility permission (System Settings → Privacy & Security → Accessibility) to intercept the media keys — it asks on first launch and retries automatically once permission is granted.
+Requirements: macOS 13 or newer.
+
+The app needs two permissions, both requested automatically on first launch:
+- **Accessibility** (System Settings → Privacy & Security → Accessibility) — to intercept the media keys. The app retries automatically once granted, no relaunch needed.
+- **Automation** (System Settings → Privacy & Security → Automation) — to control Music / Spotify. If it is missing or denied, the app no longer swallows the key: the press is passed through to macOS so default media handling keeps working, and you get a one-off notification pointing you to the setting.
 
 ---
+
+## Installation
+
+Download the latest `MacOSMediaKeyEnabler-x.y.zip` from the [Releases](https://github.com/Corrugator/macosmediakeyenabler/releases) page, unzip it, and move the app to `/Applications`.
+
+The app is **not signed with an Apple Developer ID** (notarization requires a paid account), so on first launch Gatekeeper will warn that it is from an unidentified developer. To open it anyway:
+
+- **Right-click** the app → **Open** → confirm **Open** in the dialog (only needed once), or
+- clear the quarantine flag in Terminal:
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/MacOSMediaKeyEnabler.app
+  ```
+
+To start it automatically at login, use the **Open at login** menu item (the keyboard-keys icon in the menu bar).
+
+---
+
+What's new in version 2.1 :
+- fixed: media keys no longer go dead — added the required Apple Events usage description so macOS actually permits controlling Music / Spotify
+- backup: if automation permission is missing or denied, the key is passed through to the system instead of being swallowed, so media control keeps working
+- a throttled notification points you to the right setting when control is blocked
+- new menu bar icon (keyboard-keys glyph) instead of the inconspicuous dot
+- login item can also be toggled headlessly via `--register-login-item` / `--unregister-login-item`
+- removed unused icon assets
 
 What's new in version 2.0 :
 - renamed to MacOSMediaKeyEnabler (was: HighSierraMediaKeyEnabler)
