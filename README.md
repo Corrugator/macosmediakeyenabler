@@ -4,6 +4,10 @@ macOS Media Key Enabler for Music.app and Spotify.
 
 Fork of [milgra/macmediakeyforwarder](https://github.com/milgra/macmediakeyforwarder), modernized for current macOS (Tahoe / macOS 26).
 
+<p align="center">
+  <img src="docs/menu.png" alt="MacOSMediaKeyEnabler menu bar menu" width="320">
+</p>
+
 ---
 
 You can prioritize which app you would like to control or you can go with the default behaviour which controls the running app.
